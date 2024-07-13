@@ -1,0 +1,53 @@
+name: Notify on Build and Publish Completion
+
+on:
+  workflow_run:
+    workflows: ["Build and Publish Kali Linux Docker Image"]
+    types:
+      - completed
+
+jobs:
+  notify:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Notify Discord
+      run: |
+        curl -X POST -H "Content-Type: application/json" \
+        -d '{
+          "username": "GitHub Actions",
+          "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+          "embeds": [{
+            "title": "Build and Publish Workflow Completed Successfully",
+            "description": "The workflow **${{ github.event.workflow_run.name }}** has completed successfully.",
+            "color": 3066993,
+            "fields": [
+              {
+                "name": "Repository",
+                "value": "${{ github.repository }}",
+                "inline": true
+              },
+              {
+                "name": "Ref",
+                "value": "${{ github.ref }}",
+                "inline": true
+              },
+              {
+                "name": "Committer",
+                "value": "${{ github.actor }}",
+                "inline": true
+              },
+              {
+                "name": "Run ID",
+                "value": "${{ github.run_id }}",
+                "inline": true
+              }
+            ],
+            "footer": {
+              "text": "GitHub Actions",
+              "icon_url": "https://github.githubassets.com/favicon.ico"
+            },
+            "timestamp": "${{ github.event.workflow_run.run_started_at }}"
+          }]
+        }' ${{ secrets.DISCORD_WEBHOOK_URL }}
