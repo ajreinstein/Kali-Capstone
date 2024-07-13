@@ -43,7 +43,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./docker  # Correct path to the Dockerfile directory
-          file: ./docker/Dockerfile  # Correct path to the Dockerfile
+          file: ../../docker/Dockerfile  # Correct path to the Dockerfile
           platforms: ${{ matrix.platform }}
           output: type=docker
           push: false
