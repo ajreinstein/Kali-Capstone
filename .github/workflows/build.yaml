@@ -42,8 +42,8 @@ jobs:
       - name: Build Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: ./docker  # Ensure this path is correct
-          file: ./docker/Dockerfile  # Ensure this path is correct
+          context: ./docker  # Correct path to the Dockerfile directory
+          file: ./docker/Dockerfile  # Correct path to the Dockerfile
           platforms: ${{ matrix.platform }}
           output: type=docker
           push: false
@@ -56,4 +56,3 @@ jobs:
     with:
       platforms: ${{ needs.build.outputs.platforms }}
       git_sha: ${{ needs.build.outputs.git_sha }}
-
