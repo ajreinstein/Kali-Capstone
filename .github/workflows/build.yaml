@@ -1,45 +1,59 @@
-name: Build and Run Kali Linux Docker Container
+name: build-docker-images
 
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+      - development
+
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: development
+    strategy:
+      matrix:
+        platform: [amd64] # You can add arm64 if needed
+
+    outputs:
+      platforms: ${{ matrix.platform }}
+      git_sha: ${{ env.sha }}
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
 
-    - name: Cache Docker layers
-      uses: actions/cache@v3
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-buildx-
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
-    - name: Login to DockerHub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Get Git commit SHA
+        id: git_sha
+        run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/kali-linux:latest
+      - name: Log in to DockerHub
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-    - name: Run Kali Linux container
-      run: |
-        docker run -d --name kali_container -p 2222:22 ${{ secrets.DOCKER_USERNAME }}/kali-linux:latest
+      - name: Build Docker Image
+        uses: docker/build-push-action@v2
+        with:
+          context: ./docker  # Ensure this path is correct
+          file: ./docker/Dockerfile  # Ensure this path is correct
+          platforms: ${{ matrix.platform }}
+          output: type=docker
+          push: false
+          tags: kali-linux:${{ env.sha }}-${{ matrix.platform }}
+
+  publish:
+    needs: build
+    uses: ./.github/workflows/publish.yaml
+    secrets: inherit
+    with:
+      platforms: ${{ needs.build.outputs.platforms }}
+      git_sha: ${{ needs.build.outputs.git_sha }}
