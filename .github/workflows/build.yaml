@@ -26,6 +26,10 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         context: .
+<<<<<<< HEAD
         file: docker/Dockerfile  # Ensure this path is correct
+=======
+        file: docker/Dockerfile  # Adjust path if necessary
+>>>>>>> 18f4de2212f2f6b6bde268d06a9a433c048256f7
         push: true
         tags: ${{ secrets.DOCKER_USERNAME }}/my-kali-image:latest
