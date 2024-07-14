@@ -1,58 +1,31 @@
-name: build-docker-images
+name: Build and Push Docker Image
 
 on:
   push:
     branches:
-      - main
-      - development
-
-env:
-  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      - main  # Adjust the branch as needed
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: development
-    strategy:
-      matrix:
-        platform: [amd64]
-
-    outputs:
-      platforms: ${{ matrix.platform }}
-      git_sha: ${{ env.sha }}
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Get Git commit SHA
-        id: git_sha
-        run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-
-      - name: Log in to DockerHub
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-      - name: Build Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./docker  # Correct path to the Dockerfile directory
-          file: ../../docker/Dockerfile  # Correct path to the Dockerfile
-          platforms: ${{ matrix.platform }}
-          output: type=docker
-          push: false
-          tags: kali-linux:${{ env.sha }}-${{ matrix.platform }}
-
-  publish:
-    needs: build
-    uses: ./.github/workflows/publish.yaml
-    secrets: inherit
-    with:
-      platforms: ${{ needs.build.outputs.platforms }}
-      git_sha: ${{ needs.build.outputs.git_sha }}
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        file: docker/Dockerfile  # Adjust path if necessary
+        push: true
+        tags: ${{ secrets.DOCKER_USERNAME }}/my-kali-image:latest
