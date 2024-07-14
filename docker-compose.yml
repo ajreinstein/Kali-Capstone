@@ -13,3 +13,6 @@ services:
       - ./data:/home/kaliuser/data
     stdin_open: true
     tty: true
+
+volumes:
+./data:/home/kaliuser/data:
